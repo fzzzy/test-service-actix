@@ -54,7 +54,8 @@ where
 
     fn call(&mut self, sreq: ServiceRequest) -> Self::Future {
         let resp = HttpResponse::Ok().body("olleh");
-        let sresp = sreq.into_response(resp);
+        let body = resp.into_body();
+        let sresp = sreq.into_response(body);
         Box::new(ok(sresp))
     }
 }
