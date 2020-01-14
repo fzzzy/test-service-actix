@@ -26,7 +26,7 @@ where
     type Transform = SomeMiddlewareService<S>;
     type Future = FutureResult<Self::Transform, Self::InitError>;
 
-    fn new_transform(&self, service: S) -> Self::Future {
+    fn new_transform(&self, _service: S) -> Self::Future {
         ok(SomeMiddlewareService {
             phantom: PhantomData,
         })

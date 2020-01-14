@@ -1246,7 +1246,6 @@ dependencies = [
 name = "test-service-actix"
 version = "0.1.0"
 dependencies = [
- "actix-http 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "actix-web 1.0.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.1.29 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
