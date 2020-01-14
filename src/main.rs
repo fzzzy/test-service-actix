@@ -53,7 +53,9 @@ where
     }
 
     fn call(&mut self, sreq: ServiceRequest) -> Self::Future {
-        Box::new(ok(sreq.into_response(HttpResponse::Ok().body("olleh"))))
+        let resp = HttpResponse::Ok().body("olleh");
+        let sresp = sreq.into_response(resp);
+        Box::new(ok(sresp))
     }
 }
 
