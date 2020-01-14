@@ -1,9 +1,11 @@
 use std::marker::PhantomData;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 
 use actix_web::dev::{Service, ServiceRequest, ServiceResponse, Transform};
-use actix_web::{middleware, web, App, Error, HttpResponse, HttpServer};
+use actix_web::{web, App, Error, HttpResponse, HttpServer};
 
-use futures::future::{ok, Future, FutureResult};
+use futures::future::{ok, Future, Ready};
 
 struct SomeMiddleware {}
 
@@ -24,7 +26,7 @@ where
     type Error = Error;
     type InitError = ();
     type Transform = SomeMiddlewareService<S>;
-    type Future = FutureResult<Self::Transform, Self::InitError>;
+    type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, _service: S) -> Self::Future {
         ok(SomeMiddlewareService {
@@ -46,34 +48,35 @@ where
     type Request = ServiceRequest;
     type Response = ServiceResponse<B>;
     type Error = Error;
-    type Future = Box<dyn Future<Item = Self::Response, Error = Self::Error>>;
+    type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>>>>;
 
-    fn poll_ready(&mut self) -> Result<futures::Async<()>, Self::Error> {
-        return Ok(futures::Async::Ready(()));
+    fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
     }
 
     fn call(&mut self, sreq: ServiceRequest) -> Self::Future {
         let resp = HttpResponse::Ok().body("olleh");
         let body = resp.into_body();
         let sresp = sreq.into_response(body);
-        Box::new(ok(sresp))
+        Box::pin(ok(sresp))
     }
 }
 
-pub fn handle_request() -> impl Future<Item = HttpResponse, Error = Error> {
+fn handle_request() -> impl Future<Output = Result<HttpResponse, Error>> {
     ok(HttpResponse::Ok().body("hello"))
 }
 
-fn main() -> std::io::Result<()> {
+#[actix_rt::main]
+async fn main() -> std::io::Result<()> {
     println!("Hello, world!");
 
-    HttpServer::new(move || {
+    HttpServer::new(|| {
         App::new()
-            .wrap(middleware::Logger::default())
             .wrap(SomeMiddleware::new())
             .data(web::JsonConfig::default().limit(4096))
-            .service(web::resource("/").route(web::get().to_async(handle_request)))
+            .service(web::resource("/").route(web::get().to(handle_request)))
     })
     .bind("127.0.0.1:3000")?
     .run()
+    .await
 }
